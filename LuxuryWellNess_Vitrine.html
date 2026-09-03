@@ -783,24 +783,22 @@ function showToast(msg){
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-/* ── DATA ── */
-/* ── UPSTASH CONFIG ── */
-const UPSTASH_URL = "https://able-labrador-106529.upstash.io";
-const UPSTASH_TOKEN = "gQAAAAAAAaAhAAIgcDFhMjcyMTkxNGM3OTk0ZTFkYmZkZTA5MzM2MzI1ZWZkMQ";
+/* ── DATA & API ── */
+const VERCEL_API = "https://luxurywellness.vercel.app";
 
 async function kvGet(key){
   try{
-    const r = await fetch(`${UPSTASH_URL}/get/${key}`, {headers:{'Authorization':`Bearer ${UPSTASH_TOKEN}`}});
+    const r = await fetch(`${VERCEL_API}/api/products-get`);
     const d = await r.json();
-    return d.result ? JSON.parse(d.result) : null;
+    return d.products && d.products.length ? d.products : null;
   }catch(e){ return null; }
 }
 async function kvSet(key, value){
   try{
-    await fetch(`${UPSTASH_URL}/set/${key}`, {
+    await fetch(`${VERCEL_API}/api/products-set`, {
       method:'POST',
-      headers:{'Authorization':`Bearer ${UPSTASH_TOKEN}`,'Content-Type':'application/json'},
-      body: JSON.stringify(JSON.stringify(value))
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ products: value })
     });
   }catch(e){}
 }
