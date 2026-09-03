@@ -8,7 +8,11 @@ module.exports = async (req, res) => {
       headers: { 'Authorization': `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` }
     });
     const d = await r.json();
-    const products = d.result ? JSON.parse(d.result) : [];
+    let products = [];
+    if(d.result) {
+      const parsed = JSON.parse(d.result);
+      products = Array.isArray(parsed) ? parsed : JSON.parse(parsed);
+    }
     return res.status(200).json({ products });
   } catch(err) {
     return res.status(200).json({ products: [] });
