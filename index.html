@@ -783,8 +783,27 @@ function showToast(msg){
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-/* ── DATA ── */
-let products = JSON.parse(localStorage.getItem('lwn2_products') || '[]');
+/* ── DATA & API ── */
+const VERCEL_API = "https://luxurywellness.vercel.app";
+
+async function kvGet(key){
+  try{
+    const r = await fetch(`${VERCEL_API}/api/products-get`);
+    const d = await r.json();
+    return d.products && d.products.length ? d.products : null;
+  }catch(e){ return null; }
+}
+async function kvSet(key, value){
+  try{
+    await fetch(`${VERCEL_API}/api/products-set`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ products: value })
+    });
+  }catch(e){}
+}
+
+let products = [];
 let activeFilter = 'all';
 
 /* ── LIGHTBOX ── */
@@ -885,6 +904,7 @@ function aSave(){
   const item = { id: eid?parseInt(eid):Date.now(), name, nameEn:document.getElementById('anen').value.trim(), brand:document.getElementById('abr').value.trim()||'LuxuryWellNess', cat:document.getElementById('acat').value, price, desc:document.getElementById('ades').value.trim(), badge:document.getElementById('abadge').value, photo:document.getElementById('aphoto').value.trim() };
   if(eid){ const i=products.findIndex(p=>p.id===parseInt(eid)); if(i>-1) products[i]=item; } else products.push(item);
   localStorage.setItem('lwn2_products', JSON.stringify(products));
+  await kvSet('lwn2_products', products);
   renderList(); render(); aReset();
   showToast(eid ? 'Produit mis à jour ✦' : 'Produit ajouté ✦');
 }
@@ -901,7 +921,7 @@ function aEdit(id){
     document.getElementById('aphoto-preview').style.display = 'none';
   }
 }
-function aDel(id){ if(!confirm('Supprimer ?')) return; products=products.filter(p=>p.id!==id); localStorage.setItem('lwn2_products',JSON.stringify(products)); renderList(); render(); showToast('Supprimé'); }
+function aDel(id){ if(!confirm('Supprimer ?')) return; products=products.filter(p=>p.id!==id); localStorage.setItem('lwn2_products',JSON.stringify(products)); kvSet('lwn2_products',products); renderList(); render(); showToast('Supprimé'); }
 function aReset(){ ['eid','an','anen','abr','apr','ades','aphoto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''}); document.getElementById('acat').value='sacs'; document.getElementById('abadge').value=''; document.getElementById('aform-title').textContent='Ajouter un produit'; document.getElementById('acancel').style.display='none'; removePhoto(); }
 function loadSettings(){ const s=JSON.parse(localStorage.getItem('lwn2_settings')||'{}'); if(s.ssfr)document.getElementById('ssfr').value=s.ssfr; if(s.ssen)document.getElementById('ssen').value=s.ssen; }
 function aSaveSettings(){ const s={ssfr:document.getElementById('ssfr').value,ssen:document.getElementById('ssen').value}; localStorage.setItem('lwn2_settings',JSON.stringify(s)); showToast('Paramètres sauvegardés ✦'); }
@@ -910,7 +930,16 @@ function aSaveSettings(){ const s={ssfr:document.getElementById('ssfr').value,ss
 document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeLb(); closeAdmin(); } });
 
 /* ── INIT ── */
-render();
+async function init(){
+  const saved = await kvGet('lwn2_products');
+  if(saved && Array.isArray(saved)) products = saved;
+  else {
+    const local = localStorage.getItem('lwn2_products');
+    if(local) products = JSON.parse(local);
+  }
+  render();
+}
+init();
 </script>
 </body>
 </html>
